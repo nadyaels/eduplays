@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Pintar TK Alam Amanah</title>
+    <!-- Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font-Awesome untuk ikon (jika diperlukan) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; /* Hijau muda ceria */
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="10" fill="%23dcfce7" opacity="0.5"/></svg>');
+            overflow-x: hidden;
+        }
+        h1, h2, h3, .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
+        
+        .btn-option {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+        .btn-option:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.1);
+        }
+        .btn-option:hover {
+            transform: scale(1.05);
+        }
+
+        .star-anim {
+            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Loading spinner */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #f59e0b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Audio Elements untuk suara hewan -->
+    <audio id="audio-kucing" src="https://cdn.freesound.org/previews/415/415209_5121236-lq.mp3"></audio>
+    <audio id="audio-anjing" src="https://cdn.freesound.org/previews/608/608985_13501750-lq.mp3"></audio>
+    <audio id="audio-sapi" src="https://cdn.freesound.org/previews/58/58277_634166-lq.mp3"></audio>
+
+    <!-- Kontainer Utama -->
+    <div class="max-w-3xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-green-400">
+        
+        <!-- Header -->
+        <div class="bg-green-400 text-white p-4 text-center relative">
+            <h1 class="text-3xl md:text-5xl text-shadow">TK Alam Amanah</h1>
+            <p class="text-xl mt-2 font-bold opacity-90">Bermain & Belajar</p>
+            
+            <!-- Tempat Bintang / Skor (Disembunyikan di awal) -->
+            <div id="score-container" class="hidden absolute top-4 right-4 flex gap-1 bg-white/20 p-2 rounded-full">
+                <!-- Bintang akan di-generate di sini -->
+            </div>
+        </div>
+
+        <!-- Layar Mulai -->
+        <div id="start-screen" class="p-8 text-center flex flex-col items-center">
+            <div class="text-6xl mb-6">👧🧒🌳</div>
+            <h2 class="title-font text-3xl text-gray-800 mb-6">Siap untuk bermain?</h2>
+            <button onclick="startGame()" class="bg-amber-400 hover:bg-amber-500 text-white title-font text-2xl py-4 px-10 rounded-full btn-option border-b-4 border-amber-600">
+                Mulai Bermain! 🚀
+            </button>
+            <p class="mt-4 text-gray-500 text-sm">*Pastikan volume suara dinyalakan ya!</p>
+        </div>
+
+        <!-- Layar Kuis -->
+        <div id="quiz-screen" class="p-4 md:p-8 hidden flex-col items-center w-full">
+            
+            <!-- Indikator Loading Suara -->
+            <div id="audio-loading" class="hidden flex-col items-center mb-4">
+                <div class="loader mb-2"></div>
+                <p class="text-gray-500 text-sm">Menyiapkan suara...</p>
+            </div>
+
+            <!-- Teks Pertanyaan -->
+            <div class="bg-blue-100 border-4 border-blue-300 rounded-2xl p-6 mb-8 w-full text-center relative">
+                <h2 id="question-text" class="title-font text-2xl md:text-4xl text-gray-800">Pertanyaan akan muncul di sini</h2>
+                <button onclick="replayQuestionAudio()" class="absolute top-2 right-2 bg-blue-300 hover:bg-blue-400 text-white p-3 rounded-full shadow-md transition-colors">
+                    <i class="fas fa-volume-up text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Tambahan visual (seperti gambar hewan untuk ditebak suaranya, atau jumlah apel untuk dihitung) -->
+            <div id="question-visual" class="mb-8 text-6xl text-center min-h-[80px]">
+                <!-- Visual akan disisipkan di sini -->
+            </div>
+
+            <!-- Opsi Jawaban -->
+            <div id="options-container" class="grid grid-cols-3 gap-4 w-full max-w-lg mx-auto">
+                <!-- Tombol opsi akan digenerate JavaScript -->
+            </div>
+        </div>
+
+        <!-- Layar Selesai -->
+        <div id="end-screen" class="p-8 text-center hidden flex-col items-center">
+            <h2 class="title-font text-4xl text-green-500 mb-4">Horeee! 🎉</h2>
+            <p class="text-2xl text-gray-700 mb-6">Kamu berhasil menyelesaikan kuis!</p>
+            
+            <div class="bg-yellow-100 p-6 rounded-3xl border-4 border-yellow-400 mb-8 w-full max-w-sm">
+                <p class="text-xl text-gray-600 font-bold mb-2">Bintang yang kamu kumpulkan:</p>
+                <div id="final-stars" class="flex justify-center gap-2 text-4xl flex-wrap">
+                    <!-- Bintang final di sini -->
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="bg-green-400 hover:bg-green-500 text-white title-font text-2xl py-4 px-10 rounded-full btn-option border-b-4 border-green-600">
+                Main Lagi! 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- Kredit Pembuat (Tengah Bawah) -->
+    <div class="mt-6 text-center text-green-700 font-bold opacity-90 text-sm md:text-base tracking-wide bg-white/80 py-2 px-6 rounded-full shadow-md border-4 border-green-300 title-font animate-bounce">
+        ✨ Karya : Nadya Elsa Fradhita ✨
+    </div>
+
+    <!-- Overlay Pesan Feedback -->
+    <div id="feedback-overlay" class="fixed inset-0 bg-black/40 flex items-center justify-center hidden z-50">
+        <div id="feedback-box" class="bg-white p-8 rounded-3xl shadow-2xl text-center transform scale-0 transition-transform duration-300">
+            <div id="feedback-icon" class="text-7xl mb-4">⭐</div>
+            <h2 id="feedback-text" class="title-font text-4xl text-amber-500">Hebat!</h2>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA PERTANYAAN ---
+        const bankPertanyaan = [
+            // Kategori: Bentuk
+            {
+                tipe: 'bentuk',
+                pertanyaan: "Yang manakah gambar lingkaran?",
+                suara: "Halo teman! Coba tunjuk, yang manakah gambar lingkaran?",
+                visual: "",
+                opsi: [
+                    { gambar: "🔴", benar: true },
+                    { gambar: "🟦", benar: false },
+                    { gambar: "🔺", benar: false }
+                ]
+            },
+            {
+                tipe: 'bentuk',
+                pertanyaan: "Manakah yang berbentuk segitiga?",
+                suara: "Bisa bantu aku? Manakah yang berbentuk segitiga?",
+                visual: "",
+                opsi: [
+                    { gambar: "🟡", benar: false },
+                    { gambar: "🟩", benar: false },
+                    { gambar: "🔺", benar: true }
+                ]
+            },
+            {
+                tipe: 'bentuk',
+                pertanyaan: "Cari gambar kotak (persegi) yuk!",
+                suara: "Ayo kita cari, yang manakah gambar kotak atau persegi?",
+                visual: "",
+                opsi: [
+                    { gambar: "🟦", benar: true },
+                    { gambar: "🔴", benar: false },
+                    { gambar: "⭐", benar: false }
+                ]
+            },
+
+            // Kategori: Angka 1-10
+            {
+                tipe: 'angka',
+                pertanyaan: "Manakah angka Lima?",
+                suara: "Wah, yang manakah angka lima ya?",
+                visual: "",
+                opsi: [
+                    { gambar: "2️⃣", benar: false },
+                    { gambar: "5️⃣", benar: true },
+                    { gambar: "8️⃣", benar: false }
+                ]
+            },
+            {
+                tipe: 'angka',
+                pertanyaan: "Coba cari angka Tujuh!",
+                suara: "Coba cari, manakah angka tujuh?",
+                visual: "",
+                opsi: [
+                    { gambar: "7️⃣", benar: true },
+                    { gambar: "4️⃣", benar: false },
+                    { gambar: "9️⃣", benar: false }
+                ]
+            },
+            
+            // Kategori: Berhitung
+            {
+                tipe: 'hitung',
+                pertanyaan: "Ada berapa buah apel ini?",
+                suara: "Coba hitung, ada berapa buah apel di sini?",
+                visual: "🍎 🍎 🍎", // 3 apel
+                opsi: [
+                    { gambar: "2️⃣", benar: false },
+                    { gambar: "3️⃣", benar: true },
+                    { gambar: "5️⃣", benar: false }
+                ]
+            },
+            {
+                tipe: 'hitung',
+                pertanyaan: "Hitung jumlah mobilnya yuk!",
+                suara: "Mari berhitung, ada berapa mobilnya?",
+                visual: "🚗 🚗 🚗 🚗", // 4 mobil
+                opsi: [
+                    { gambar: "4️⃣", benar: true },
+                    { gambar: "6️⃣", benar: false },
+                    { gambar: "1️⃣", benar: false }
+                ]
+            },
+
+            // Kategori: Hewan (Bentuk/Gambar)
+            {
+                tipe: 'hewan_bentuk',
+                pertanyaan: "Yang manakah gambar gajah?",
+                suara: "Hewan yang belalainya panjang. Yang manakah gambar gajah?",
+                visual: "",
+                opsi: [
+                    { gambar: "🐘", benar: true },
+                    { gambar: "🐅", benar: false },
+                    { gambar: "🐒", benar: false }
+                ]
+            },
+            {
+                tipe: 'hewan_bentuk',
+                pertanyaan: "Mana hewan yang suka melompat (katak)?",
+                suara: "Mana ya hewan yang suka melompat, yaitu katak?",
+                visual: "",
+                opsi: [
+                    { gambar: "🐢", benar: false },
+                    { gambar: "🐸", benar: true },
+                    { gambar: "🐦", benar: false }
+                ]
+            },
+
+            // Kategori: Hewan (Suara)
+            {
+                tipe: 'hewan_suara',
+                pertanyaan: "Suara hewan apakah ini?",
+                suara: "Coba dengarkan... Suara hewan apakah ini?",
+                visual: "<button onclick='playSuaraHewan(\"audio-kucing\")' class='bg-purple-400 text-white p-4 rounded-full hover:bg-purple-500 animate-pulse'><i class='fas fa-play text-2xl'></i> Dengarkan</button>",
+                audio_id: "audio-kucing",
+                opsi: [
+                    { gambar: "🐕", benar: false },
+                    { gambar: "🐈", benar: true },
+                    { gambar: "🐄", benar: false }
+                ]
+            },
+            {
+                tipe: 'hewan_suara',
+                pertanyaan: "Tebak suara hewan ini!",
+                suara: "Dengarkan baik-baik. Suara hewan apakah ini?",
+                visual: "<button onclick='playSuaraHewan(\"audio-sapi\")' class='bg-purple-400 text-white p-4 rounded-full hover:bg-purple-500 animate-pulse'><i class='fas fa-play text-2xl'></i> Dengarkan</button>",
+                audio_id: "audio-sapi",
+                opsi: [
+                    { gambar: "🐄", benar: true },
+                    { gambar: "🐎", benar: false },
+                    { gambar: "🐑", benar: false }
+                ]
+            }
+        ];
+
+        let pertanyaanSaatIni = [];
+        let indeksPertanyaan = 0;
+        let skor = 0;
+        let audioContext = null;
+        let isAudioPlaying = false;
+
+        // Feedback Text
+        const feedbackBenar = [
+            { teks: "Hebat!", suara: "Hebat!" },
+            { teks: "Pintar Sekali!", suara: "Pintar Sekali!" },
+            { teks: "Luar Biasa!", suara: "Luar biasa!" }
+        ];
+        
+        const feedbackSalah = [
+            { teks: "Coba lagi yuk!", suara: "Ops, kurang tepat. Coba lagi yuk!" },
+            { teks: "Hampir benar!", suara: "Hampir benar. Ayo coba yang lain!" }
+        ];
+
+        // --- FUNGSI GEMINI TTS ---
+        async function playTTS(text) {
+            const loadingEl = document.getElementById('audio-loading');
+            loadingEl.classList.remove('hidden');
+            loadingEl.classList.add('flex');
+            
+            try {
+                // Konfigurasi payload untuk API Gemini TTS
+                const payload = {
+                    contents: [{
+                        parts: [{ text: text }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                // Menggunakan suara 'Leda' yang Youthful (cocok untuk anak-anak) atau 'Puck' (Upbeat)
+                                prebuiltVoiceConfig: { voiceName: "Puck" } 
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const apiKey = ""; // API Key disuntikkan oleh Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    // Ekstrak sample rate dari mimeType (contoh: audio/pcm;rate=24000)
+                    let sampleRate = 24000; // Default
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    if (rateMatch) {
+                        sampleRate = parseInt(rateMatch[1], 10);
+                    }
+
+                    // Decode base64 ke ArrayBuffer
+                    const binaryString = atob(audioData);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    // Convert raw PCM16 ke WAV agar bisa diputar di browser dengan mudah
+                    const pcm16 = new Int16Array(bytes.buffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    // Putar Audio
+                    const audio = new Audio(audioUrl);
+                    audio.onplay = () => { isAudioPlaying = true; };
+                    audio.onended = () => { isAudioPlaying = false; };
+                    await audio.play();
+                } else {
+                    console.error("Format audio tidak sesuai atau data kosong dari API.");
+                }
+            } catch (error) {
+                console.error("Gagal memutar TTS:", error);
+            } finally {
+                loadingEl.classList.add('hidden');
+                loadingEl.classList.remove('flex');
+            }
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const numChannels = 1; // Mono
+            const bitsPerSample = 16;
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcm16.length * 2; // 2 bytes per sample (16-bit)
+            const chunkSize = 36 + dataSize;
+            
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            // RIFF chunk descriptor
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, chunkSize, true);
+            writeString(view, 8, 'WAVE');
+            
+            // fmt sub-chunk
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+            view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            
+            // data sub-chunk
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+            
+            // Write PCM data
+            let offset = 44;
+            for (let i = 0; i < pcm16.length; i++, offset += 2) {
+                view.setInt16(offset, pcm16[i], true);
+            }
+            
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Mengacak array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('quiz-screen').classList.add('flex');
+            document.getElementById('score-container').classList.remove('hidden');
+            
+            // Sapaan awal
+            playTTS("Halo teman-teman! Selamat datang di kuis Taman Kanak Kanak Alam Amanah. Mari kita mulai belajar sambil bermain!");
+
+            skor = 0;
+            updateBintang();
+            
+            // Pilih 5 pertanyaan acak dari bank soal
+            pertanyaanSaatIni = shuffleArray([...bankPertanyaan]).slice(0, 5);
+            indeksPertanyaan = 0;
+            
+            setTimeout(() => {
+                tampilkanPertanyaan();
+            }, 5000); // Tunggu sapaan selesai
+        }
+
+        function tampilkanPertanyaan() {
+            const data = pertanyaanSaatIni[indeksPertanyaan];
+            
+            document.getElementById('question-text').innerText = data.pertanyaan;
+            document.getElementById('question-visual').innerHTML = data.visual;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            // Acak opsi jawaban
+            const opsiDiacak = shuffleArray([...data.opsi]);
+
+            opsiDiacak.forEach((opsi, index) => {
+                const btn = document.createElement('button');
+                // Warna tombol berbeda untuk setiap opsi
+                const colors = ['bg-pink-300 border-pink-500 hover:bg-pink-400', 'bg-cyan-300 border-cyan-500 hover:bg-cyan-400', 'bg-lime-300 border-lime-500 hover:bg-lime-400'];
+                const colorClass = colors[index % colors.length];
+
+                btn.className = `${colorClass} text-5xl p-6 rounded-3xl btn-option border-b-8 flex items-center justify-center min-h-[100px] bg-opacity-80`;
+                btn.innerHTML = opsi.gambar;
+                btn.onclick = () => cekJawaban(opsi.benar, btn, data);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Putar suara pertanyaan (jika sedang tidak ada suara lain)
+            if(!isAudioPlaying){
+               playTTS(data.suara);
+            }
+        }
+
+        function replayQuestionAudio() {
+             const data = pertanyaanSaatIni[indeksPertanyaan];
+             playTTS(data.suara);
+        }
+
+        function playSuaraHewan(audioId) {
+            const audioEl = document.getElementById(audioId);
+            if(audioEl) {
+                audioEl.currentTime = 0;
+                audioEl.play();
+            }
+        }
+
+        async function cekJawaban(isBenar, elemenTombol, dataSoal) {
+            const overlay = document.getElementById('feedback-overlay');
+            const box = document.getElementById('feedback-box');
+            const icon = document.getElementById('feedback-icon');
+            const text = document.getElementById('feedback-text');
+
+            overlay.classList.remove('hidden');
+            
+            if (isBenar) {
+                // Jawaban Benar
+                skor++;
+                updateBintang();
+                
+                // Animasi Bintang jatuh/pop
+                elemenTombol.innerHTML += '<div class="absolute text-3xl star-anim">⭐</div>';
+
+                const feedback = feedbackBenar[Math.floor(Math.random() * feedbackBenar.length)];
+                icon.innerHTML = "🌟";
+                text.innerText = feedback.teks;
+                text.className = "title-font text-4xl text-green-500";
+                
+                // Tampilkan overlay dengan animasi
+                setTimeout(() => box.classList.remove('scale-0'), 10);
+                
+                await playTTS(feedback.suara);
+
+                setTimeout(() => {
+                    box.classList.add('scale-0');
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        lanjutPertanyaan();
+                    }, 300);
+                }, 2000);
+
+            } else {
+                // Jawaban Salah
+                elemenTombol.classList.add('shake');
+                setTimeout(() => elemenTombol.classList.remove('shake'), 500);
+
+                const feedback = feedbackSalah[Math.floor(Math.random() * feedbackSalah.length)];
+                icon.innerHTML = "💪";
+                text.innerText = feedback.teks;
+                text.className = "title-font text-4xl text-amber-500";
+
+                setTimeout(() => box.classList.remove('scale-0'), 10);
+
+                await playTTS(feedback.suara);
+
+                setTimeout(() => {
+                    box.classList.add('scale-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }, 2000);
+            }
+        }
+
+        function updateBintang() {
+            const container = document.getElementById('score-container');
+            container.innerHTML = '';
+            for (let i = 0; i < skor; i++) {
+                container.innerHTML += '<span class="text-2xl text-yellow-400 star-anim">⭐</span>';
+            }
+        }
+
+        function lanjutPertanyaan() {
+            indeksPertanyaan++;
+            if (indeksPertanyaan < pertanyaanSaatIni.length) {
+                tampilkanPertanyaan();
+            } else {
+                akhiriGame();
+            }
+        }
+
+        function akhiriGame() {
+            document.getElementById('quiz-screen').classList.remove('flex');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('score-container').classList.add('hidden');
+            
+            const endScreen = document.getElementById('end-screen');
+            endScreen.classList.remove('hidden');
+            endScreen.classList.add('flex');
+
+            const finalStars = document.getElementById('final-stars');
+            finalStars.innerHTML = '';
+            for (let i = 0; i < skor; i++) {
+                finalStars.innerHTML += '<span class="star-anim" style="animation-delay: '+ (i*0.2) +'s">⭐</span>';
+            }
+            if(skor === 0) {
+                finalStars.innerHTML = '<span class="text-gray-400 text-lg">Coba lagi untuk dapat bintang ya!</span>';
+            }
+
+            playTTS(`Wah kamu hebat sekali! Kamu berhasil mengumpulkan ${skor} bintang. Sampai jumpa lagi!`);
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+    </script>
+</body>
+</html>
